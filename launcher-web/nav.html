@@ -83,6 +83,13 @@ body{
   opacity:0;transition:opacity .25s ease;pointer-events:none;white-space:nowrap;
 }
 #tip.show{opacity:1}
+#mask .mbtn{
+  margin-top:clamp(10px,.9vw,18px);border:2px solid var(--accent);border-radius:999px;
+  background:transparent;color:var(--accent);font-family:inherit;font-weight:600;
+  font-size:clamp(13px,1.1vw,20px);padding:clamp(7px,.6vw,12px) clamp(16px,1.5vw,28px);cursor:pointer;
+}
+/* 导航栏最右边的退出键：橙色实心，一眼就能找到 */
+.nbtn.exit{background:var(--accent);border-color:var(--accent);color:#160c02;font-weight:700}
 </style>
 </head>
 <body>
@@ -95,7 +102,7 @@ body{
   <input id="addr" type="text" autocomplete="off" spellcheck="false" placeholder="输入网址或搜索词">
   <button class="nbtn" data-act="go">前往</button>
   <button class="nbtn" data-act="kb">⌨ 键盘</button>
-  <button class="nbtn" data-act="desktop">回桌面</button>
+  <button class="nbtn exit" data-act="desktop">⌂ 回桌面</button>
 </div>
 
 <div id="sites">
@@ -103,10 +110,14 @@ body{
   <div class="grid" id="grid"></div>
 </div>
 
-<div id="webwrap" hidden>
-  <iframe id="web" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+  <div id="webwrap" hidden>
+  <!-- sandbox 里刻意不给 allow-top-navigation：这样网页就顶不掉启动器。
+       之前在必应里点一下，顶层被 window.top.location 接管，导航栏整个消失、回不来。 -->
+  <iframe id="web"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"
+          allow="autoplay; encrypted-media; picture-in-picture"></iframe>
   <div id="mask" hidden>正在加载…</div>
-  <div id="tip">按遥控器返回键或 Esc，回到上面的菜单栏</div>
+  <div id="tip">按遥控器返回键 / Esc 回到上面的菜单栏；右上角「回桌面」随时可用</div>
 </div>
 
 <script>
@@ -160,7 +171,25 @@ function toProxy(u){
 }
 function fromProxy(href){
   const m = /(?:^|[?&])u=([^&]+)/.exec(href || '');
-  return m ? decodeURIComponent(m[1]) : (href || '');
+  if (m) return decodeURIComponent(m[1]);
+  /* 表单 GET 提交会变成 /p?__p_url=...&字段，把源站地址 + 字段还原出来 */
+  const p = /(?:^|[?&])__p_url=([^&]+)/.exec(href || '');
+  if (p) {
+    let url = decodeURIComponent(p[1]);
+    const rest = [];
+    const re = /[?&]([^=&]+)=([^&]*)/g;
+    let mm;
+    while ((mm = re.exec(href))) {
+      if (mm[1] === '__p_url' || mm[1] === '__p_method' || mm[1] === 'u' || mm[1] === 'url') continue;
+      rest.push(mm[1] + '=' + mm[2]);
+    }
+    if (rest.length) url += (url.indexOf('?') >= 0 ? '&' : '?') + rest.join('&');
+    return url;
+  }
+  /* 表单是浏览器直接提交的（没经过 /p?u=），地址栏解析不出来，
+     就保持上一次的网址，不要显示成一串 /p?q=... 的内部地址 */
+  if ((href || '').indexOf('/p?') >= 0) return '';
+  return href || '';
 }
 function parseInput(v){
   v = (v || '').trim();
@@ -176,23 +205,88 @@ function navGo(rawUrl){
   current = url;
   addr.value = url;
   showWeb();
-  mask.hidden = false;
+  startMask();
   web.src = toProxy(url);
 }
 function showWeb(){ sitesEl.hidden = true; webwrap.hidden = false; }
 function showSites(){ webwrap.hidden = true; sitesEl.hidden = false; paintSites(); }
 
+/* 加载遮罩：15 秒还没出来就说明这站打不开，给一个明确的出口，别让人干等 */
+let maskTimer = null;
+function startMask(){
+  clearTimeout(maskTimer);
+  mask.innerHTML = '正在加载…';
+  mask.hidden = false;
+  maskTimer = setTimeout(failMask, 15000);
+}
+function stopMask(){ clearTimeout(maskTimer); mask.hidden = true; }
+function failMask(){
+  stopMask();
+  mask.hidden = false;
+  mask.innerHTML = '<div style="text-align:center">' +
+    '<div>这个网站打不开或加载太慢</div>' +
+    '<button class="mbtn" id="maskBack">☰ 回到站点列表</button></div>';
+  const b = document.getElementById('maskBack');
+  if (b) b.addEventListener('click', navHome);
+}
+/* 网页上常驻的退出入口就是导航栏最右边的橙色「⌂ 回桌面」，
+   导航栏本身由 sandbox 保住，不会再被网页顶掉 */
+
 function navBack(){   try { web.contentWindow.history.back(); }    catch(e){} }
 function navFwd(){    try { web.contentWindow.history.forward(); } catch(e){} }
-function navReload(){ mask.hidden = false; try { web.contentWindow.location.reload(); } catch(e){} }
-function navHome(){   showSites(); addr.value = ''; web.src = 'about:blank'; }
+function navReload(){ startMask(); try { web.contentWindow.location.reload(); } catch(e){ stopMask(); } }
+function navHome(){   showSites(); addr.value = ''; stopMask(); try { web.src = 'about:blank'; } catch(e){} }
 
 /* 供启动器顶栏调用（同源，可直接访问） */
 window.navGo = navGo; window.navBack = navBack;
 window.navFwd = navFwd; window.navReload = navReload;
 
+/* 供启动器的软键盘调用：网页里有输入框在聚焦时，把按键直接打进网页，
+   而不是只写进启动器自己的地址栏。 */
+window.webHasInput = function(){
+  try {
+    const w = web.contentWindow;
+    return !!(w && typeof w.__launcherHasInput === 'function' && w.__launcherHasInput());
+  } catch(e){ return false; }
+};
+window.webType = function(txt){
+  try {
+    const w = web.contentWindow;
+    if (w && typeof w.__launcherType === 'function') return w.__launcherType(txt);
+  } catch(e){}
+  return false;
+};
+window.webBack = function(){
+  try {
+    const w = web.contentWindow;
+    if (w && typeof w.__launcherBack === 'function') return w.__launcherBack();
+  } catch(e){}
+  return false;
+};
+window.webEnter = function(){
+  try {
+    const w = web.contentWindow;
+    if (w && typeof w.__launcherEnter === 'function') return w.__launcherEnter();
+  } catch(e){}
+  return false;
+};
+window.webValue = function(){
+  try {
+    const w = web.contentWindow;
+    if (w && typeof w.__launcherValue === 'function') return w.__launcherValue();
+  } catch(e){}
+  return null;
+};
+window.webClear = function(){
+  try {
+    const w = web.contentWindow;
+    if (w && typeof w.__launcherClear === 'function') return w.__launcherClear();
+  } catch(e){}
+  return false;
+};
+
 web.addEventListener('load', () => {
-  mask.hidden = true;
+  stopMask();
   try {
     const href = web.contentWindow.location.href;
     const real = fromProxy(href);
@@ -294,12 +388,16 @@ window.addEventListener('message', e => {
   if (d && typeof d === 'object' && d.__launcherKey) {
     parent.postMessage({ __launcherKey: d.__launcherKey }, '*');
   }
+  /* 网页里的输入框被点了 -> 让启动器弹软键盘 */
+  if (d && typeof d === 'object' && d.__launcherKbNeed) {
+    parent.postMessage({ __launcherKbNeed: 1 }, '*');
+  }
 });
 
 /* 点击网页区域时把提示再显示一次，顺便绑一次按键监听 */
 web.addEventListener('load', showTip);
 document.addEventListener('mousedown', e => {
-  if (e.target === addr) { clearSites(); }
+  if (e.target === addr) { clearSites(); askKeyboard(); }
 });
 
 paintSites();

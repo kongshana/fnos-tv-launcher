@@ -24,7 +24,7 @@ import socket
 import time
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs, urljoin, quote, urlencode
+from urllib.parse import urlparse, parse_qs, urljoin, quote, unquote, urlencode
 import urllib.request
 import urllib.error
 
@@ -46,6 +46,7 @@ UA = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36')
 
 # 代理页里注入的脚本：把遥控器的返回/菜单键交给启动器处理（同源，因此可注入）
+# 这段会被插到 <head> 最前面，尽量抢在站点自己的脚本之前挂上监听。
 INJECT_JS = """
 <script>
 (function(){
@@ -56,17 +57,136 @@ INJECT_JS = """
     return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || t.isContentEditable;
   }
   function relay(k){ try { parent.postMessage({__launcherKey:k}, '*'); } catch(e){} }
-  document.addEventListener('keydown', function(e){
+  function onKey(e){
     var k = e.key;
-    if (k === 'Escape' || k === 'ContextMenu' || k === 'GoBack' || k === 'BrowserBack') {
+    if (KEYS.indexOf(k) >= 0) {
       e.preventDefault(); e.stopPropagation(); relay(k); return;
     }
-    // 方向键与 OK 只在没有输入焦点时上报，避免抢走网页自身的键盘操作
-    if (!isTyping(e.target) &&
-        (k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight')) {
+    // 方向键只在没有输入焦点时上报，避免抢走网页自身的键盘操作
+    if (!isTyping(e.target) && k && k.indexOf('Arrow') === 0) {
       e.preventDefault(); e.stopPropagation(); relay(k);
     }
+  }
+  // window 上的捕获阶段最早拿到按键，站点在 document 上 stopPropagation 也拦不住
+  window.addEventListener('keydown', onKey, true);
+  document.addEventListener('keydown', onKey, true);
+
+  // 双保险：新窗口一律在当前网页内打开。
+  // 注意：绝对不要改写 window.open 成 _self —— 很多站点会无参调用 window.open 做探测，
+  // 一改就会把当前页导航成 about:blank（必应就是这么变空白的）。
+  // 这里只拦 <a target>，window.open 交给 iframe 的 sandbox 拦（没给 allow-popups）。
+  try {
+    document.addEventListener('click', function(e){
+      var a = e.target && e.target.closest ? e.target.closest('a[target]') : null;
+      if (a && (a.target === '_blank' || a.target === '_top' || a.target === '_parent')) {
+        e.preventDefault();
+        try { location.href = a.href; } catch(err){}
+      }
+    }, true);
+  } catch(e){}
+
+  // 表单提交：改成我们自己的代理地址。
+  // 这里不能用「往表单里塞 hidden 字段」的办法 —— 站点脚本按字段顺序取值，
+  // 多两个字段就会把它的参数全部错位（必应搜索直接变成乱码）。
+  document.addEventListener('submit', function(e){
+    var f = e.target;
+    if (!f || f.tagName !== 'FORM') return;
+    if (((f.getAttribute('method') || 'get') + '').toLowerCase() !== 'get') return;
+    var base = f.getAttribute('data-pbase');
+    if (!base) return;
+    var parts = [], els = f.elements, i, el, t;
+    for (i = 0; i < els.length; i++) {
+      el = els[i];
+      if (!el.name || el.disabled) continue;
+      t = (el.type || '').toLowerCase();
+      if (t === 'submit' || t === 'button' || t === 'file' || t === 'image' || t === 'reset') continue;
+      if ((t === 'checkbox' || t === 'radio') && !el.checked) continue;
+      parts.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value == null ? '' : el.value));
+    }
+    var sep = base.indexOf('?') >= 0 ? '&' : '?';
+    var full = base + (parts.length ? sep + parts.join('&') : '');
+    var org = '';
+    try { org = (location.origin && location.origin !== 'null') ? location.origin : (parent.location.origin || ''); } catch(err){}
+    if (!org) return;
+    e.preventDefault();
+    location.href = org + '/p?u=' + encodeURIComponent(full);
   }, true);
+
+  // 让启动器的软键盘能把字直接打进网页里的输入框（电视上没有实体键盘）
+  var lastInput = null;
+  var lastTap = 0;
+  function isField(t){
+    return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+  }
+  document.addEventListener('focusin', function(e){
+    if (isField(e.target)) {
+      lastInput = e.target;
+      // 用户刚点过输入框 -> 让启动器把软键盘弹出来（电视上没有实体键盘）
+      if (Date.now() - lastTap < 1500) {
+        try { parent.postMessage({__launcherKbNeed: 1}, '*'); } catch(err){}
+      }
+    }
+  }, true);
+  /* 注意：不能拿 document.activeElement 判断 —— 软键盘弹出后焦点会转到顶层文档，
+     iframe 里的 activeElement 变成 body，会误判成“没有输入框”。
+     这里改成：点到输入框就记住，点到网页其它地方才清掉。 */
+  document.addEventListener('pointerdown', function(e){
+    lastTap = Date.now();
+    if (!isField(e.target)) lastInput = null;
+  }, true);
+  window.__launcherHasInput = function(){
+    try { return isField(lastInput); } catch(e){ return false; }
+  };
+  window.__launcherType = function(txt){
+    try {
+      if (!window.__launcherHasInput()) return false;
+      if (lastInput.isContentEditable) {
+        lastInput.textContent += txt;
+      } else {
+        lastInput.value = (lastInput.value || '') + txt;
+      }
+      lastInput.dispatchEvent(new Event('input', {bubbles:true}));
+      return true;
+    } catch(e){ return false; }
+  };
+  window.__launcherEnter = function(){
+    try {
+      if (!window.__launcherHasInput()) return false;
+      lastInput.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', keyCode:13, which:13, bubbles:true}));
+      lastInput.dispatchEvent(new KeyboardEvent('keypress', {key:'Enter', keyCode:13, which:13, bubbles:true}));
+      lastInput.dispatchEvent(new KeyboardEvent('keyup', {key:'Enter', keyCode:13, which:13, bubbles:true}));
+      if (lastInput.form) { try { lastInput.form.requestSubmit(); } catch(e){ lastInput.form.submit(); } }
+      return true;
+    } catch(e){ return false; }
+  };
+  window.__launcherBack = function(){
+    try {
+      if (!window.__launcherHasInput()) return false;
+      if (lastInput.isContentEditable) {
+        lastInput.textContent = String(lastInput.textContent || '').slice(0, -1);
+      } else {
+        lastInput.value = String(lastInput.value || '').slice(0, -1);
+      }
+      lastInput.dispatchEvent(new Event('input', {bubbles:true}));
+      return true;
+    } catch(e){ return false; }
+  };
+  window.__launcherValue = function(){
+    try {
+      if (!isField(lastInput)) return null;
+      return lastInput.isContentEditable ? String(lastInput.textContent || '')
+                                         : String(lastInput.value || '');
+    } catch(e){ return null; }
+  };
+  window.__launcherClear = function(){
+    try {
+      if (!window.__launcherHasInput()) return false;
+      if (lastInput.isContentEditable) lastInput.textContent = '';
+      else lastInput.value = '';
+      lastInput.dispatchEvent(new Event('input', {bubbles:true}));
+      return true;
+    } catch(e){ return false; }
+  };
 })();
 </script>
 """
@@ -99,8 +219,14 @@ ATTR_RE = r'(?i)\b%s\s*=\s*("([^"]*)"|\'([^\']*)\'|([^\s>]+))'
 SKIP_PREFIX = ('#', 'javascript:', 'mailto:', 'tel:', 'data:', 'about:', 'blob:')
 
 
-def proxify(v, base):
-    """把一个原始链接换成经过代理的相对地址"""
+def proxify(v, base, origin=''):
+    """把一个原始链接换成经过代理的地址。
+
+    注意：必须带上本站的 origin（http://<ip>:<port>），不能只写 /p?u=。
+    因为被代理的页面里有 <base href="https://源站/">，
+    根相对路径 /p?u=... 会被解析成 https://源站/p?u=... → 404，
+    表现就是 CSS/图片全部加载失败，页面只剩裸文字。
+    """
     if not v:
         return None
     s = v.strip()
@@ -111,35 +237,36 @@ def proxify(v, base):
     abs_url = urljoin(base, s)
     if not abs_url.startswith(('http://', 'https://')):
         return None
-    return '/p?u=' + quote(abs_url, safe='')
+    return (origin or '') + '/p?u=' + quote(abs_url, safe='')
 
 
-def rewrite_html(doc, base):
+def rewrite_html(doc, base, origin=''):
     esc = lambda s: html_lib.escape(s, quote=True)
 
-    # 1) 表单：action 指向代理，并带上原始目标与方法
+    # 1) 表单：action 指向代理，原始目标放进 data-pbase（交给注入脚本用）。
+    #    注意：绝对不要在表单里塞 hidden 字段 —— 站点自己的脚本是按字段顺序取值的，
+    #    多两个字段就把它的参数全打乱（必应搜索会变成一堆乱码参数）。
     def form_sub(m):
         tag = m.group(0)
         am = re.search(ATTR_RE % 'action', tag)
-        mm = re.search(ATTR_RE % r'method', tag)
-        method = (attr_val(mm) or 'get').lower() if mm else 'get'
         raw_act = attr_val(am) if am else ''
         target = urljoin(base, raw_act) if raw_act else base
+        new_tag = tag
         if am:
-            new_tag = re.sub(ATTR_RE % 'action', 'action="/p"', tag, count=1)
+            new_tag = re.sub(ATTR_RE % 'action', 'action="%s/p"' % (origin or ''), tag, count=1)
         else:
-            new_tag = tag[:-1] + ' action="/p">'
-        hidden = ('<input type="hidden" name="__p_url" value="%s">'
-                  '<input type="hidden" name="__p_method" value="%s">'
-                  % (esc(target), method))
-        return new_tag + hidden
+            new_tag = tag[:-1] + ' action="%s/p"' % (origin or '')
+        # 原始目标写进自定义属性，注入脚本提交时用它拼真实地址
+        if 'data-pbase' not in new_tag:
+            new_tag = new_tag[:-1] + ' data-pbase="%s">' % esc(target)
+        return new_tag
 
     doc = re.sub(r'(?i)<form\b[^>]*>', form_sub, doc)
 
     # 2) 普通链接
     def href_sub(m):
         v = attr_val(m)
-        p = proxify(v, base)
+        p = proxify(v, base, origin)
         if p is None:
             return m.group(0)
         q = m.group(2) is not None and '"' or "'"
@@ -153,7 +280,7 @@ def rewrite_html(doc, base):
         pm = re.search(r'(?i)url\s*=\s*([^;"]+)', inner)
         if not pm:
             return m.group(0)
-        p = proxify(pm.group(1).strip().strip('\'"'), base)
+        p = proxify(pm.group(1).strip().strip('\'"'), base, origin)
         if p is None:
             return m.group(0)
         return '<meta http-equiv="refresh" content="%s;url=%s">' % (
@@ -165,20 +292,14 @@ def rewrite_html(doc, base):
     # 4) 去掉会阻止内嵌的 CSP meta
     doc = re.sub(r'(?i)<meta\s+http-equiv=["\']?Content-Security-Policy["\']?[^>]*>', '', doc)
 
-    # 5) 注入 base，保证图片/CSS/JS 等相对资源仍指向源站
+    # 5) 注入 base + 遥控转发脚本：都放到 <head> 最前面，
+    #    这样能抢在站点自己的脚本之前挂上按键监听（放 </head> 前面会被站点抢先）。
     base_tag = '<base href="%s">' % esc(base)
     if re.search(r'(?i)<head\b', doc):
-        doc = re.sub(r'(?i)<head([^>]*)>', lambda m: m.group(0) + base_tag, doc, count=1)
+        doc = re.sub(r'(?i)<head([^>]*)>',
+                     lambda m: m.group(0) + base_tag + INJECT_JS, doc, count=1)
     else:
-        doc = base_tag + doc
-
-    # 6) 注入遥控转发脚本
-    if re.search(r'(?i)</head>', doc):
-        doc = re.sub(r'(?i)</head>', INJECT_JS + '</head>', doc, count=1)
-    elif re.search(r'(?i)<body\b', doc):
-        doc = re.sub(r'(?i)<body([^>]*)>', lambda m: m.group(0) + INJECT_JS, doc, count=1)
-    else:
-        doc = INJECT_JS + doc
+        doc = base_tag + INJECT_JS + doc
 
     return doc
 
@@ -458,6 +579,38 @@ class Handler(BaseHTTPRequestHandler):
     def proxy(self, u):
         q = parse_qs(u.query)
         target = (q.get('u') or q.get('url') or [''])[0]
+
+        # GET 表单提交：action 被改成了 /p，字段以 __p_url / __p_method 的形式带在查询串里，
+        # 例如 /p?__p_url=https%3A%2F%2Fcn.bing.com%2Fsearch&__p_method=get&q=n
+        # 这里要把它还原成「源站地址 + 表单字段」，否则必应一搜索就报“没有指定网址”。
+        if not target and q.get('__p_url'):
+            target = q['__p_url'][0]
+            extra = []
+            for k, vals in q.items():
+                if k in ('__p_url', '__p_method', 'u', 'url'):
+                    continue
+                for v in vals:
+                    extra.append((k, v))
+            if extra:
+                target += ('&' if '?' in target else '?') + urlencode(extra)
+
+        if not target:
+            # 兜底：站点用 form.submit() 直接提交时不会经过注入脚本，
+            # 请求会落到 /p?字段...，这里从 Referer 里把源站找回来。
+            ref = self.headers.get('Referer') or ''
+            m = re.search(r'[?&]u=([^&]+)', ref)
+            if m:
+                base = unquote(m.group(1))
+                extra = []
+                for k, vals in q.items():
+                    if k in ('u', 'url', '__p_url', '__p_method'):
+                        continue
+                    for v in vals:
+                        extra.append((k, v))
+                if extra:
+                    base += ('&' if '?' in base else '?') + urlencode(extra)
+                target = base
+
         if not target:
             return self._err('没有指定网址')
 
@@ -486,6 +639,9 @@ class Handler(BaseHTTPRequestHandler):
         pu = urlparse(target)
         if not pu.hostname or host_blocked(pu.hostname):
             return self._err('这个地址不允许通过代理访问')
+
+        # 本站的绝对地址：改写链接时必须用它，否则 <base> 会把它指到源站去
+        origin = 'http://' + (self.headers.get('Host') or ('127.0.0.1:%d' % PORT))
 
         headers = {
             'User-Agent': UA,
@@ -525,10 +681,23 @@ class Handler(BaseHTTPRequestHandler):
                     pass
 
         ctype_l = ctype.lower()
+
+        # 样式表里的 url(/rp/x.png) 会按本站地址解析而 404，转成源站绝对地址
+        if 'text/css' in ctype_l:
+            try:
+                css = raw.decode('utf-8', 'replace')
+                css = re.sub(
+                    r'url\(\s*([\'\"]?)(/[^\'\"\)]+)\1\s*\)',
+                    lambda m: 'url(%s%s%s)' % (m.group(1), urljoin(final_url, m.group(2)), m.group(1)),
+                    css)
+                raw = css.encode('utf-8')
+            except Exception:
+                pass
+
         if any(t in ctype_l for t in ('text/html', 'application/xhtml', 'text/plain')) \
                 or (not ctype_l.strip()):
             doc = decode_body(raw, ctype)
-            doc = rewrite_html(doc, final_url)
+            doc = rewrite_html(doc, final_url, origin)
             return self._send(200, doc.encode('utf-8'), 'text/html; charset=utf-8')
 
         # 非文档：原样转发

@@ -152,10 +152,9 @@ while : ; do
     --noerrdialogs \
     --disable-infobars \
     --disable-translate \
-    --disable-features=TranslateUI,Translate,ThirdPartyStoragePartitioning,PartitionedCookies,TrackingProtection3pcd,StorageAccessAPI \
+    --disable-features=TranslateUI,Translate,ThirdPartyStoragePartitioning,PartitionedCookies,TrackingProtection3pcd \
     --disable-suggestions-service \
     --autoplay-policy=no-user-gesture-required \
-    --disable-restore-session-state \
     --disable-session-crashed-bubble \
     --no-first-run \
     --no-default-browser-check \

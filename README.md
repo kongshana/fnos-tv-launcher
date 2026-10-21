@@ -76,6 +76,31 @@
 
 代理内置 SSRF 防护：内网地址（127.*、192.168.*、10.*）一律拒绝。
 
+**几个必须踩过的坑**（改这块代码前先读，能省一晚上）：
+
+- **网页必须加 sandbox**：`sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"`，
+  **刻意不给 `allow-top-navigation`、不给 `allowfullscreen`**。
+  否则站点里一句 frame-buster 就能把**顶层**导航走（必应实测会把整个启动器顶掉，
+  窗口标题变成 `Search - Microsoft Bing`，Esc 完全无效，只能重启服务）。
+- **改写链接要用绝对地址** `http://<ip>:<port>/p?u=...`，不能只写 `/p?u=`。
+  因为页面里被注入了 `<base href="源站/">`，根相对路径会被解析到源站 → 整站 CSS/图片全 404，只剩裸文字。
+- **不要在 `<form>` 里插 hidden 字段**（比如 `__p_url`）：站点脚本按字段顺序取值，多两个字段就会
+  把它的参数全部错位（必应会提交成 `q=b&__p_url=&__p_method=QBLH` 这种乱码）。
+  正确做法是 `action` 指向 `/p` + 自定义属性 `data-pbase="原始地址"`，由注入脚本拦 `submit` 自己拼；
+  `form.submit()` 绕过事件的情况再用 **Referer** 兜底（所以 iframe 不要设 `referrerpolicy="no-referrer"`）。
+- **不要改写 `window.open`**：很多站点会无参调用它做探测，改成 `_self` 会把当前页导航成 `about:blank`。
+  交给 sandbox 拦，`<a target="_blank">` 由注入脚本改成当前 frame 内跳转。
+
+![浏览器站点页](docs/screenshots/06-browser-sites.png)
+
+![必应搜索结果](docs/screenshots/04-browser-search.png)
+
+### 电视上的输入
+
+点网页里的输入框会自动弹出软键盘；打字只进软键盘自己的输入框，点「前往 ⤴」才一次性填进网页并回车。
+（一边打字一边往网页塞字符是不行的：网页的 input 处理会把焦点抢回 iframe，后面的方向键/回车漏进网页，
+实测会让必应自己把搜索提交掉。）
+
 ### 分辨率自适应
 
 每次启动实时探测电视分辨率，算出 `--force-device-scale-factor` 和 `--window-size`：
@@ -179,8 +204,14 @@ sudo ./install.sh --files-root /vol1/1000/影视 # 「我的文件」只看这�
 
 ### 软键盘
 
-工具条上「⌨ 键盘」打开，方向键选字母、`OK` 输入，空格 / 退格 / 清空 / 123 / 前往 / 关闭。
-「前往」：输网址直接开，输别的用必应搜索。中文输入做不了（没有输入法）。
+工具条上「⌨ 键盘」打开（点网页输入框也会自动弹），方向键选字母，
+`OK ✓` 把选中的字符打进输入框（遥控器的 OK / 回车同理），另有 空格 / 退格 / 清空 / 123 / 前往 / 关闭。
+「前往 ⤴」：输网址直接开，输别的用必应搜索；如果光标在网页的搜索框里，则把文字填进网页并回车。
+中文输入做不了（没有输入法）。
+
+![软键盘 OK 键](docs/screenshots/05-keyboard-ok.png)
+
+![软键盘输入](docs/screenshots/07-keyboard-input.png)
 
 ---
 
@@ -282,7 +313,14 @@ kiosk 的浏览器 profile 从没登录过。用飞鼠在电视上（或远程�
 │   ├── launcher_web.py     # 同源服务：静态页 + /p 网页代理 + /api/list + /raw
 │   ├── nav.html            # 浏览器导航页（地址栏 + 常用站点）
 │   └── files.html          # 「我的文件」文件浏览器
-└── docs/screenshots/
+└── docs/screenshots/      # 电视实测截图
+    ├── 01-home.png
+    ├── 02-files.png
+    ├── 03-video.png
+    ├── 04-browser-search.png
+    ├── 05-keyboard-ok.png
+    ├── 06-browser-sites.png
+    └── 07-keyboard-input.png
 ```
 
 装完后在 NAS 上是这样（`<个人文件夹>` 如 `/vol1/1000`）：

@@ -53,15 +53,15 @@ nav{display:flex;gap:clamp(14px,1.5vw,30px);flex:1}
 main{flex:1;display:flex;flex-direction:column;justify-content:center;
   padding:0 clamp(32px,3.6vw,70px) clamp(8px,.8vw,16px);gap:clamp(16px,1.8vw,34px)}
 .hero{
-  display:flex;align-items:center;gap:clamp(24px,2.6vw,52px);
-  padding:clamp(20px,2.2vw,42px) clamp(22px,2.4vw,46px);
+  display:flex;align-items:center;gap:clamp(20px,2.2vw,44px);
+  padding:clamp(12px,1.35vw,26px) clamp(22px,2.4vw,46px);
   border-radius:clamp(16px,1.5vw,28px);
   background:linear-gradient(100deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,.015) 62%, transparent 100%);
   border:1px solid var(--line);
 }
 .hero-text{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1vw,20px)}
-.hero-title{font-size:clamp(34px,3.6vw,68px);font-weight:500;line-height:1.12}
-.hero-sub{font-size:clamp(15px,1.3vw,25px);color:var(--dim);line-height:1.5;max-width:clamp(320px,34vw,650px)}
+.hero-title{font-size:clamp(28px,3vw,56px);font-weight:500;line-height:1.1}
+.hero-sub{font-size:clamp(14px,1.15vw,22px);color:var(--dim);line-height:1.5;max-width:clamp(320px,34vw,650px)}
 .hero-actions{display:flex;gap:clamp(10px,1vw,18px);margin-top:clamp(4px,.4vw,8px)}
 .btn{
   border:none;border-radius:clamp(8px,.85vw,16px);cursor:pointer;
@@ -73,20 +73,20 @@ main{flex:1;display:flex;flex-direction:column;justify-content:center;
 .btn:hover{transform:translateY(-2px)}
 .btn:focus,.btn.on{transform:translateY(-2px) scale(1.04);filter:brightness(1.08);outline:none}
 .hero-art{
-  flex:0 0 auto;width:clamp(130px,13.5vw,258px);height:clamp(130px,13.5vw,258px);
+  flex:0 0 auto;width:clamp(104px,10.4vw,198px);height:clamp(104px,10.4vw,198px);
   border-radius:clamp(20px,2.1vw,40px);display:flex;align-items:center;justify-content:center;
   background:color-mix(in srgb, var(--accent) 20%, #10151d);
   box-shadow:0 18px 46px rgba(0,0,0,.5);transition:background .3s ease;
 }
 .hero-art svg{width:52%;height:52%;color:var(--accent)}
 .row-wrap{display:flex;flex-direction:column;gap:clamp(10px,1vw,18px)}
-.row-title{font-size:clamp(14px,1.22vw,23px);font-weight:500;color:var(--dim);letter-spacing:.05em}
+.row-title{font-size:clamp(15px,1.32vw,26px);font-weight:500;color:var(--dim);letter-spacing:.05em}
 .row{display:flex;gap:clamp(14px,1.5vw,28px)}
 .card{
-  width:clamp(190px,16.4vw,315px);height:clamp(112px,9.9vw,190px);
+  width:clamp(190px,16.4vw,315px);height:clamp(140px,12.5vw,242px);
   border-radius:clamp(12px,1.2vw,22px);background:var(--card);
   border:3px solid transparent;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:clamp(8px,.75vw,14px);
+  align-items:center;justify-content:center;gap:clamp(10px,1.05vw,20px);
   cursor:pointer;outline:none;opacity:.78;
   transition:transform .2s ease,background .2s ease,border-color .2s ease,opacity .2s ease,box-shadow .2s ease;
 }
@@ -95,17 +95,28 @@ main{flex:1;display:flex;flex-direction:column;justify-content:center;
   box-shadow:0 0 0 5px color-mix(in srgb, var(--accent) 20%, transparent),0 18px 40px rgba(0,0,0,.5);
 }
 .card .glyph{
-  width:clamp(46px,4.9vw,94px);height:clamp(46px,4.9vw,94px);
+  width:clamp(68px,6.9vw,134px);height:clamp(68px,6.9vw,134px);
   border-radius:clamp(12px,1.3vw,24px);display:flex;align-items:center;justify-content:center;
   background:color-mix(in srgb, var(--accent) 22%, transparent);
 }
 .card .glyph svg{width:56%;height:56%;color:var(--accent)}
-.card .name{font-size:clamp(15px,1.32vw,25px);font-weight:500}
+.card .name{font-size:clamp(20px,1.9vw,38px);font-weight:500}
 footer{
   display:flex;justify-content:space-between;align-items:center;
   padding:0 clamp(32px,3.6vw,70px) clamp(18px,1.9vw,36px);
   color:var(--dim);font-size:clamp(13px,1.1vw,21px);
 }
+/* 后台应用提示：应用常驻不销毁，这里告诉用户怎么释放 */
+#bgtip{
+  display:flex;align-items:center;gap:clamp(6px,.5vw,10px);
+  margin:0 clamp(32px,3.6vw,70px) clamp(6px,.5vw,10px);
+  padding:clamp(7px,.6vw,12px) clamp(14px,1.2vw,22px);
+  border-radius:clamp(8px,.8vw,14px);
+  background:rgba(255,255,255,.04);border:1px dashed #2b3444;
+  color:#8b98ab;font-size:clamp(12px,1vw,18px);
+}
+#bgtip[hidden]{display:none}
+#bgtip b{color:#c9d4e3;font-weight:500}
 kbd{
   display:inline-block;min-width:clamp(22px,1.85vw,35px);
   padding:clamp(2px,.18vw,4px) clamp(6px,.55vw,10px);margin:0 clamp(2px,.18vw,4px);
@@ -142,7 +153,10 @@ kbd{
   font-size:clamp(11px,.95vw,18px);color:#6b7788;
 }
 #framewrap{flex:1;position:relative;background:#000}
-#frame{border:0;width:100%;height:100%;display:block;background:#000}
+.appframe{
+  position:absolute;inset:0;width:100%;height:100%;border:0;
+  display:none;background:#000;
+}
 #loading{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   font-size:clamp(15px,1.3vw,25px);color:#5d6879;background:#05070b;
@@ -180,6 +194,7 @@ kbd{
 }
 .kbkey.wide{min-width:clamp(70px,9vw,180px)}
 .kbkey.go{background:var(--accent);color:#0a0d13;border-color:var(--accent);font-weight:600}
+.kbkey.ok{background:#16241d;border-color:var(--accent);color:var(--accent);font-weight:600}
 .kbkey.del{background:#2a1c22;border-color:#4a2f38;color:#ffb3c1}
 .kbtip{text-align:center;color:#6b7788;font-size:clamp(11px,.9vw,17px);margin-top:clamp(8px,.7vw,14px)}
 </style>
@@ -212,8 +227,10 @@ kbd{
     </section>
   </main>
 
+  <div id="bgtip" hidden></div>
+
   <footer>
-    <div><kbd>←</kbd><kbd>→</kbd> 选择　<kbd>OK</kbd> / <kbd>回车</kbd> 打开　<kbd>1</kbd>–<kbd>5</kbd> 直达　·　不动它就会自动轮播</div>
+    <div><kbd>←</kbd><kbd>→</kbd> 选择　<kbd>OK</kbd> / <kbd>回车</kbd> 打开　<kbd>1</kbd>–<kbd>5</kbd> 直达　<kbd>0</kbd> 关闭后台应用　·　不动它就会自动轮播</div>
     <div>点一下顶部工具条 → <kbd>←</kbd><kbd>→</kbd> 选按钮，<kbd>OK</kbd> 执行，<kbd>Esc</kbd> 回桌面</div>
   </footer>
 </div>
@@ -232,16 +249,18 @@ kbd{
     <span id="hint">　方向键选按钮 · OK 执行 · 网页里按 Esc 回到这条菜单栏 · 再按 Esc 回桌面</span>
   </div>
   <div id="framewrap">
-    <iframe id="frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+    <!-- 每个应用一个常驻 iframe（由 JS 动态创建）。
+         关键：回桌面只隐藏、不销毁，这样影视的登录令牌留在内存里，
+         下次进来不用再输账号密码。 -->
     <div id="loading">正在加载…</div>
   </div>
 </div>
 
 <!-- ============ 软键盘 ============ -->
 <div id="kbdlg" hidden>
-  <input id="kbin" type="text" autocomplete="off" spellcheck="false" placeholder="输入网址或搜索词，然后点「前往」">
+  <input id="kbin" type="text" autocomplete="off" spellcheck="false" placeholder="输入网址或搜索词：方向键选字符，OK/回车 输入，输完点「前往 ⤴」">
   <div id="kbgrid"></div>
-  <div class="kbtip">方向键移动 · OK 输入 · 退格删除 · 「前往」: 网址直接打开，其它内容用必应搜索</div>
+  <div class="kbtip">方向键移动 · <b>OK / 回车 = 输入选中的字符</b> · 退格删除 · 点「前往 ⤴」打开网页或搜索　·　在网页搜索框里时，「前往」会把文字填进网页并搜索</div>
 </div>
 
 <script>
@@ -280,18 +299,20 @@ const heroArt   = document.getElementById('heroArt');
 const btnOpen   = document.getElementById('btnOpen');
 const homeEl    = document.getElementById('home');
 const appEl     = document.getElementById('appview');
-const frame     = document.getElementById('frame');
+const framewrap = document.getElementById('framewrap');
 const loading   = document.getElementById('loading');
 const bar       = document.getElementById('bar');
 const appnameEl = document.getElementById('appname');
 const kbdlg     = document.getElementById('kbdlg');
 const kbin      = document.getElementById('kbin');
 const kbgrid    = document.getElementById('kbgrid');
+const bgtip     = document.getElementById('bgtip');
 
 /* mode: home(选应用) | bar(工具条) | kb(软键盘) | app(焦点交给应用) */
 let mode  = 'home';
 let cur   = 0;
 let curApp = -1;
+let justOpenedAt = 0;      // 刚打开应用的时刻，用来吃掉同一按键的“余波”
 
 /* ---------- 首页：应用卡片与标签 ---------- */
 APPS.forEach((app, i) => {
@@ -352,10 +373,42 @@ function nudge(){                       // 用户一动：暂停，稍后再续
   window.addEventListener(ev, () => { if (mode === 'home') nudge(); }, { passive:true });
 });
 
-/* ---------- 应用视图 ---------- */
+/* ---------- 应用视图 ----------
+   每个应用一个 iframe，第一次打开时创建，之后一直常驻（切走只是 display:none）。
+   这样影视/相册的登录态、页面位置都留在内存里，回桌面再进来不用重新登录。 */
+const frames = [];        // APPS 下标 -> iframe
+let curFrame = null;
+
+function ensureFrame(i){
+  if (frames[i]) return frames[i];
+  const f = document.createElement('iframe');
+  f.className = 'appframe';
+  f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+  f.setAttribute('allowfullscreen', '');
+  f.addEventListener('load', () => {
+    if (curFrame === f) loading.hidden = true;
+    flushPendingNav(f);
+    if (mode === 'bar') { try { window.focus(); } catch (e) {} }
+  });
+  f.addEventListener('click', () => { if (mode !== 'kb') setMode('app'); });
+  loading.hidden = false;
+  f.src = APPS[i].url;
+  framewrap.appendChild(f);
+  frames[i] = f;
+  /* 兜底：8 秒还没 load 完就收起遮罩，避免一直卡在“正在加载” */
+  setTimeout(() => { if (curFrame === f) loading.hidden = true; }, 8000);
+  return f;
+}
+function showFrame(i){
+  frames.forEach((f, n) => { if (f) f.style.display = (n === i) ? 'block' : 'none'; });
+  curFrame = frames[i] || null;
+}
+
 function openApp(i){
   const a = APPS[i];
+  if (curApp !== i) hideKb();
   curApp = i;
+  justOpenedAt = performance.now();     // 防呆：刚打开的这一下按键别再被执行一次
   selectApp(i);
   if (a.external) {                       // 外部站点：整页打开，按返回键回启动器
     window.location.href = a.url;
@@ -363,25 +416,49 @@ function openApp(i){
   }
   homeEl.hidden = true;
   appEl.hidden  = false;
-  loading.hidden = false;
   appnameEl.textContent = a.name;
   document.body.style.setProperty('--accent', a.color);
-  frame.src = a.url;
+  const fresh = !frames[i];
+  ensureFrame(i);
+  showFrame(i);
+  if (!fresh) loading.hidden = true;      // 已常驻的页面不再显示加载遮罩
   setMode('bar');
 }
+/* 回桌面：只隐藏窗口，绝不销毁 iframe —— 登录态就靠这一点保住 */
 function goHome(){
-  frame.src = 'about:blank';
   appEl.hidden = true;
   homeEl.hidden = false;
   hideKb();
   setMode('home');
+  refreshBgTip();
   window.focus();
 }
-function frameWin(){ try { return frame.contentWindow; } catch (e) { return null; } }
+/* 后台还留着的应用，提示用户按 0 释放（省内存、也把视频声音停掉） */
+function refreshBgTip(){
+  const alive = [];
+  for (let i = 0; i < frames.length; i++) if (frames[i]) alive.push(i);
+  if (mode !== 'home' || !alive.length) { bgtip.hidden = true; return; }
+  bgtip.innerHTML = '后台运行中：<b>' + alive.map(i => APPS[i].name).join('、') +
+    '</b>　·　按 <kbd>0</kbd> 全部关闭（同时停掉视频声音、释放内存）·　按 <kbd>1</kbd>–<kbd>5</kbd> 可回到其中任意一个';
+  bgtip.hidden = false;
+}
+function closeAllFrames(){
+  for (let i = 0; i < frames.length; i++) {
+    const f = frames[i];
+    if (!f) continue;
+    try { f.src = 'about:blank'; f.remove(); } catch (e) {}
+    frames[i] = null;
+  }
+  curFrame = null;
+  curApp = -1;
+  loading.hidden = true;
+  refreshBgTip();
+}
+function frameWin(){ try { return curFrame ? curFrame.contentWindow : null; } catch (e) { return null; } }
 /* 浏览器应用：它自己内部还有一层网页 iframe，前进/后退/刷新要穿透一层 */
 function navWin(){
   try {
-    const w = frame.contentWindow;
+    const w = curFrame && curFrame.contentWindow;
     return (w && typeof w.navGo === 'function') ? w : null;
   } catch (e) { return null; }
 }
@@ -398,21 +475,18 @@ function goFwd(){
 function reloadPage(){
   const n = navWin();
   if (n) { try { n.navReload(); } catch (e) {} return; }
+  if (!curFrame) return;
+  const f = curFrame;
   loading.hidden = false;
-  const u = frame.src;
-  frame.src = 'about:blank';
-  setTimeout(() => { frame.src = u; }, 120);
+  const u = f.src;
+  f.src = 'about:blank';
+  setTimeout(() => { f.src = u; }, 120);
 }
 function intoApp(){
   const w = frameWin();
   if (w) { try { w.focus(); } catch (e) {} }
   setMode('app');
 }
-frame.addEventListener('load', () => {
-  loading.hidden = true;
-  if (mode === 'bar') { /* 保持焦点在工具条 */ }
-});
-frame.addEventListener('click', () => { if (mode !== 'kb') setMode('app'); });
 
 /* ---------- 工具条 ---------- */
 const barBtns = [...bar.querySelectorAll('.bbtn')];
@@ -435,6 +509,18 @@ function runBar(act){
     case 'into':   intoApp(); break;
   }
 }
+/* 把键盘焦点抢回顶层文档。
+   应用 iframe 常驻之后，焦点容易留在应用里，导致从首页按 OK/回车打开应用时
+   那一下按键被应用误收（比如直接触发影视的“登录”校验）。 */
+function grabFocus(){
+  try {
+    const ae = document.activeElement;
+    if (ae && ae !== document.body && ae.tagName !== 'INPUT') ae.blur();
+    document.body.focus({ preventScroll: true });
+  } catch (e) {}
+  try { window.focus(); } catch (e) {}
+}
+
 function setMode(m){
   mode = m;
   bar.classList.toggle('live', m === 'bar');
@@ -442,7 +528,7 @@ function setMode(m){
   barBtns.forEach((b, n) => b.classList.toggle('on', onBar && n === barIdx));
   btnOpen.classList.toggle('on', m === 'home');
   [...row.children].forEach((c, n) => c.classList.toggle('on', m === 'home' && n === cur));
-  if (m === 'bar' || m === 'home') { try { window.focus(); } catch (e) {} }
+  if (m === 'bar' || m === 'home') grabFocus();
   if (m === 'home') startRotate(); else stopRotate();
 }
 
@@ -471,6 +557,7 @@ function buildKb(){
       const b = document.createElement('div');
       b.className = 'kbkey';
       b.textContent = ch;
+      b.dataset.ch = ch;
       b.addEventListener('mouseenter', () => {
         if (mode !== 'kb') return;
         kbR = kbRows.indexOf(cells); kbC = cells.indexOf(b); paintKb();
@@ -488,9 +575,11 @@ function buildKb(){
   const func = [
     { label:'空格', cls:'wide', fn: () => typeChar(' ') },
     { label:'退格', cls:'wide del', fn: kbBackspace },
-    { label:'清空', cls:'', fn: () => { kbin.value = ''; kbin.focus(); } },
+    { label:'清空', cls:'', fn: kbClear },
     { label: kbSet === 'abc' ? '123' : 'ABC', cls:'', fn: () => { kbSet = kbSet === 'abc' ? '123' : 'abc'; buildKb(); paintKb(); } },
-    { label:'前往', cls:'wide go', fn: kbGo },
+    /* 显式的 OK 键：遥控器没有实体回车时，用它把选中的字符打进输入框 */
+    { label:'OK ✓', cls:'ok', fn: kbOk },
+    { label:'前往 ⤴', cls:'wide go', fn: kbGo },
     { label:'关闭', cls:'', fn: hideKb }
   ];
   const cells = func.map(f => {
@@ -508,9 +597,39 @@ function buildKb(){
   kbgrid.appendChild(d);
   kbRows.push(cells);
 }
+let lastCh = 'q';     /* 最近选中的字符：鼠标点到「OK ✓」时用它兜底 */
 function paintKb(){
-  kbRows.forEach((line, r) => line.forEach((b, c) => b.classList.toggle('on', r === kbR && c === kbC)));
+  kbRows.forEach((line, r) => line.forEach((b, c) => {
+    const on = (r === kbR && c === kbC);
+    b.classList.toggle('on', on);
+    if (on && b.dataset.ch) lastCh = b.dataset.ch;
+  }));
 }
+/* 按 OK / 回车 / 点「OK ✓」：只把选中的字符打进输入框，绝不跳转 */
+function kbOk(){
+  const b = kbRows[kbR] && kbRows[kbR][kbC];
+  if (b && b.dataset.ch) { typeChar(b.dataset.ch); return; }
+  if (lastCh) typeChar(lastCh);
+}
+/* 当前是不是「浏览器」应用，而且网页里有个输入框正聚焦着？
+   是的话，软键盘的字要直接打进网页，而不是只写进我们自己的地址栏。 */
+function webKb(){
+  const n = navWin();
+  if (!n || typeof n.webHasInput !== 'function') return null;
+  try { return n.webHasInput() ? n : null; } catch (e) { return null; }
+}
+function syncFromWeb(n){
+  try {
+    const v = n && n.webValue ? n.webValue() : null;
+    if (typeof v === 'string') {
+      kbin.value = v;
+      kbin.setSelectionRange(kbin.value.length, kbin.value.length);
+    }
+  } catch (e) {}
+}
+/* 网页里的输入框只在「前往 ⤴」时一次性写入。
+   如果一边打字一边往网页塞字符，网页的输入处理会把焦点抢回 iframe，
+   后面的方向键/回车就漏进网页里，实测会让必应自己把搜索提交掉。 */
 function typeChar(ch){
   kbin.value += ch;
   kbin.focus();
@@ -521,8 +640,21 @@ function kbBackspace(){
   kbin.focus();
   kbin.setSelectionRange(kbin.value.length, kbin.value.length);
 }
+function kbClear(){
+  kbin.value = '';
+  kbin.focus();
+}
 function kbGo(){
   const v = kbin.value.trim();
+  /* 网页里有输入框在等字（比如必应的搜索框）：把整段文字填进去并回车，
+     由网页自己完成搜索，比另开一个搜索地址更符合直觉。 */
+  const n = webKb();
+  if (n) {
+    hideKb();
+    if (!v) return;
+    try { n.webClear(); n.webType(v); n.webEnter(); } catch (e) {}
+    return;
+  }
   if (!v) { hideKb(); return; }
   let url;
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v))      url = v;
@@ -532,19 +664,34 @@ function kbGo(){
   navTo(url);                      // 在浏览器应用内部打开，菜单栏不会消失
 }
 /* 统一入口：切到浏览器应用并在其中打开网址 */
+let pendingNav = null;      // 浏览器应用还没加载好时先记下来，load 完再送进去
 function navTo(url){
   const bi = APPS.findIndex(a => a.name === '浏览器');
   if (bi < 0) { window.location.href = url; return; }
   if (curApp !== bi) openApp(bi);
   const w = frameWin();
   if (w && typeof w.navGo === 'function') { w.navGo(url); setMode('bar'); }
-  else window.location.href = url;
+  else pendingNav = url;      // 绝不用整页跳转，否则就脱离启动器了
+}
+function flushPendingNav(f){
+  if (!pendingNav) return;
+  try {
+    if (f.contentWindow && typeof f.contentWindow.navGo === 'function') {
+      const u = pendingNav; pendingNav = null;
+      f.contentWindow.navGo(u);
+    }
+  } catch (e) {}
 }
 function showKb(){
   if (!kbRows.length) buildKb();
   kbdlg.hidden = false;
   kbR = 0; kbC = 0; paintKb();
   setMode('kb');
+  const n = webKb();
+  if (n) syncFromWeb(n);          // 网页输入框里已有的字，同步显示进来
+  /* 关键：点网页输入框自动弹键盘时，焦点还在 iframe 里，
+     不抢回顶层的话，方向键和 OK 会漏进网页（实测直接把必应的搜索提交了）。 */
+  grabFocus();
   setTimeout(() => kbin.focus(), 30);
 }
 function hideKb(){ kbdlg.hidden = true; if (mode === 'kb') setMode('bar'); }
@@ -577,6 +724,12 @@ document.addEventListener('keydown', e => {
   }
 
   if (mode === 'bar') {
+    /* 刚从首页打开应用时，同一下回车很容易被再执行一遍（工具条第一项正好是“回桌面”），
+       于是应用一闪就退回桌面。这里把 350ms 内的回车吃掉。 */
+    if (performance.now() - justOpenedAt < 350 &&
+        (k === 'Enter' || k === ' ' || k === 'OK' || k === 'Select')) {
+      e.preventDefault(); return;
+    }
     switch (k) {
       case 'ArrowRight': setBarFocus(barIdx + 1); e.preventDefault(); return;
       case 'ArrowLeft':  setBarFocus(barIdx - 1); e.preventDefault(); return;
@@ -597,6 +750,7 @@ document.addEventListener('keydown', e => {
       case 'ArrowLeft':  case 'ArrowUp':   moveHome(-1); e.preventDefault(); return;
       case 'Enter': case ' ': case 'OK': case 'Select': openApp(cur); e.preventDefault(); return;
     }
+    if (k === '0') { closeAllFrames(); e.preventDefault(); return; }   // 关掉后台应用
     if (/^[1-9]$/.test(k) && +k <= APPS.length) { selectApp(+k - 1); e.preventDefault(); }
     return;
   }
@@ -623,6 +777,13 @@ window.addEventListener('message', e => {
     return;
   }
 
+  if (d.__launcherKbNeed) {                   // 网页里点了输入框，自动弹键盘
+    const bi = APPS.findIndex(a => a.name === '浏览器');
+    if (bi >= 0 && curApp !== bi) return;
+    if (kbdlg.hidden) showKb();
+    return;
+  }
+
   const k = d.__launcherKey;
   if (!k) return;
   if (k === 'Escape' || k === 'ContextMenu') {
@@ -637,8 +798,12 @@ window.addEventListener('message', e => {
 btnOpen.addEventListener('click', () => openApp(cur));
 
 /* 无窗口管理器时窗口可能未激活，主动抢一次焦点，保证键盘可用 */
-window.focus();
-document.addEventListener('DOMContentLoaded', () => window.focus());
+document.body.setAttribute('tabindex', '-1');
+grabFocus();
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.setAttribute('tabindex', '-1');
+  grabFocus();
+});
 
 function tick(){
   const d = new Date();
@@ -650,6 +815,12 @@ selectApp(0);
 setBarFocus(0);
 buildKb();
 startRotate();          /* 开机就进入轮播，按任意键接管 */
+
+/* 排错用：远程看一眼当前处于哪个模式（不影响正常使用） */
+window.__launcherState = function(){
+  return { mode: mode, cur: cur, curApp: curApp, barIdx: barIdx,
+           appHidden: appEl.hidden, homeHidden: homeEl.hidden };
+};
 
 /* 把当前逻辑(CSS)分辨率写进窗口标题，方便远程排查缩放是否正确 */
 function setTitle(){
