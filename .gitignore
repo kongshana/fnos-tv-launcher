@@ -1,0 +1,17 @@
+# Chromium profile：里面有登录态和缓存，别传
+.chrome/
+
+# 运行时产物
+.resolution
+*.log
+shots/
+
+# Python
+__pycache__/
+*.pyc
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

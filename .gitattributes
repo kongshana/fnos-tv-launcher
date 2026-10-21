@@ -1,0 +1,5 @@
+# 统一按 LF 入库，Windows 上检出也不转成 CRLF
+# 这样 shell 脚本在飞牛（Linux）上不会遇到 ^M 问题
+* text=auto eol=lf
+
+*.png binary

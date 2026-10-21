@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我的文件</title>
+<style>
+:root{
+  --bg:#0b0f16; --card:#141a24; --card-on:#1b2331;
+  --text:#e9eef6; --dim:#8794a8; --line:#1e2734; --accent:#ffd166;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text)}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  display:flex;flex-direction:column;user-select:none;-webkit-user-select:none;
+}
+
+/* ---------- 顶部导航 ---------- */
+#top{
+  display:flex;align-items:center;gap:clamp(7px,.6vw,13px);
+  padding:clamp(9px,.75vw,15px) clamp(14px,1.2vw,24px);
+  background:#0e131b;border-bottom:1px solid #1b2331;flex:0 0 auto;
+}
+.fbtn{
+  border:2px solid #26303f;border-radius:clamp(7px,.65vw,12px);
+  background:#131a24;color:#c9d4e3;font-family:inherit;font-weight:500;
+  font-size:clamp(13px,1.05vw,20px);padding:clamp(6px,.55vw,11px) clamp(11px,.95vw,19px);
+  cursor:pointer;outline:none;white-space:nowrap;
+  transition:transform .12s ease,border-color .12s ease,background .12s ease,color .12s ease;
+}
+.fbtn:hover{border-color:#3a4757}
+.fbtn.on{
+  transform:scale(1.08);border-color:var(--accent);background:#1d2634;color:#fff;
+  box-shadow:0 0 0 4px rgba(255,209,102,.22);
+}
+#crumbs{
+  display:flex;align-items:center;gap:clamp(4px,.35vw,8px);flex:1;min-width:0;
+  overflow:hidden;font-size:clamp(13px,1.05vw,20px);color:var(--dim);
+}
+.crumb{cursor:pointer;padding:clamp(3px,.25vw,5px) clamp(5px,.45vw,9px);
+  border-radius:clamp(6px,.5vw,10px);white-space:nowrap}
+.crumb:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.crumb.now{color:var(--text);font-weight:500}
+.spacer{flex:1}
+#count{color:#6b7788;font-size:clamp(12px,.95vw,18px);white-space:nowrap}
+
+/* ---------- 文件网格 ---------- */
+#grid{
+  flex:1;display:flex;flex-wrap:wrap;align-content:flex-start;gap:clamp(12px,1.15vw,22px);
+  padding:clamp(16px,1.5vw,30px) clamp(18px,1.8vw,34px);
+  overflow-y:auto;
+}
+.item{
+  width:clamp(190px,16.5vw,320px);border-radius:clamp(11px,1.05vw,20px);
+  background:var(--card);border:3px solid transparent;overflow:hidden;
+  cursor:pointer;outline:none;
+  transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.item.on{
+  transform:scale(1.05);background:var(--card-on);border-color:var(--accent);
+  box-shadow:0 14px 34px rgba(0,0,0,.45);
+}
+.thumb{
+  height:clamp(96px,9vw,170px);display:flex;align-items:center;justify-content:center;
+  background:#0f141c center/contain no-repeat;
+}
+.thumb svg{width:34%;height:34%;color:var(--accent)}
+.thumb img.th{width:100%;height:100%;object-fit:cover;display:block}
+.meta{padding:clamp(8px,.7vw,14px) clamp(10px,.9vw,17px)}
+.nm{
+  font-size:clamp(14px,1.15vw,22px);font-weight:500;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sub{margin-top:clamp(3px,.25vw,5px);color:#6b7788;font-size:clamp(11px,.92vw,17px)}
+#empty{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  color:#5d6879;font-size:clamp(15px,1.3vw,25px);
+}
+#empty[hidden]{display:none}
+#grid.busy{opacity:.45}
+
+/* ---------- 查看器 ---------- */
+#viewer{position:fixed;inset:0;z-index:30;background:rgba(5,7,11,.96);
+  display:flex;flex-direction:column}
+#viewer[hidden]{display:none}
+#vbody{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:clamp(10px,1vw,20px)}
+#vbody img{max-width:100%;max-height:100%;object-fit:contain;border-radius:clamp(8px,.8vw,14px)}
+#vbody video,#vbody audio{max-width:100%;max-height:100%;outline:none;background:#000}
+#vtext{
+  max-width:min(1200px,92vw);max-height:100%;overflow:auto;white-space:pre-wrap;word-break:break-all;
+  font-size:clamp(13px,1.05vw,20px);line-height:1.7;color:#c9d4e3;
+  background:#0f141c;border-radius:clamp(8px,.8vw,14px);padding:clamp(14px,1.3vw,26px);
+}
+#vbar{
+  display:flex;align-items:center;gap:clamp(7px,.6vw,13px);
+  padding:clamp(10px,.85vw,17px) clamp(14px,1.2vw,24px);
+  background:#0e131b;border-top:1px solid #1b2331;flex:0 0 auto;
+}
+#vname{font-size:clamp(13px,1.1vw,21px);color:var(--dim);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;max-width:46%}
+#vnote{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  max-width:70%;text-align:center;color:#ffb3c1;font-size:clamp(14px,1.2vw,23px);line-height:1.7;
+}
+#vwrap{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+a.dl{
+  color:#0a0d13;background:var(--accent);text-decoration:none;font-weight:600;
+  padding:clamp(8px,.7vw,14px) clamp(18px,1.6vw,32px);border-radius:clamp(8px,.8vw,14px);
+  font-size:clamp(14px,1.2vw,22px);
+}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <button class="fbtn" data-act="up">⟰ 上一级</button>
+  <button class="fbtn" data-act="refresh">⟲ 刷新</button>
+  <div id="crumbs"></div>
+  <span id="count"></span>
+  <button class="fbtn" data-act="desktop">⌂ 回桌面</button>
+</div>
+
+<div id="grid"></div>
+<div id="empty" hidden>这个文件夹是空的</div>
+
+<div id="viewer" hidden>
+  <div id="vbody"><div id="vwrap"></div></div>
+  <div id="vbar">
+    <button class="fbtn" data-act="prev">← 上一个</button>
+    <button class="fbtn" data-act="next">下一个 →</button>
+    <span id="vname"></span>
+    <span class="spacer"></span>
+    <button class="fbtn" data-act="close">✕ 关闭</button>
+  </div>
+</div>
+
+<script>
+const ICONS = {
+  folder:'<svg viewBox="0 0 100 100"><path d="M8 24 C8 19 12 16 17 16 L38 16 C42 16 45 18 47 21 L51 27 C52 29 55 30 58 30 L83 30 C88 30 92 34 92 39 L92 76 C92 81 88 84 83 84 L17 84 C12 84 8 81 8 76 Z" fill="currentColor"/></svg>',
+  image:'<svg viewBox="0 0 100 100"><rect x="14" y="24" width="72" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="7"/><circle cx="50" cy="50" r="13" fill="none" stroke="currentColor" stroke-width="7"/><path d="M22 70 L38 52 L52 66 L66 46 L78 62 L78 70 Z" fill="currentColor"/></svg>',
+  video:'<svg viewBox="0 0 100 100"><rect x="10" y="22" width="62" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="7"/><path d="M78 42 L92 32 L92 68 L78 58 Z" fill="currentColor"/></svg>',
+  audio:'<svg viewBox="0 0 100 100"><circle cx="34" cy="72" r="13" fill="currentColor"/><circle cx="72" cy="60" r="13" fill="currentColor"/><rect x="44" y="20" width="7" height="52" rx="3" fill="currentColor"/><rect x="82" y="8" width="7" height="52" rx="3" fill="currentColor"/><path d="M44 20 L89 8 L89 22 L51 34 Z" fill="currentColor"/></svg>',
+  text:'<svg viewBox="0 0 100 100"><rect x="20" y="12" width="60" height="76" rx="6" fill="none" stroke="currentColor" stroke-width="7"/><path d="M32 36 H68 M32 52 H68 M32 68 H54" fill="none" stroke="currentColor" stroke-width="6"/></svg>',
+  file:'<svg viewBox="0 0 100 100"><path d="M26 10 H58 L74 26 V90 H26 Z" fill="none" stroke="currentColor" stroke-width="7"/><path d="M58 10 V26 H74" fill="none" stroke="currentColor" stroke-width="7"/></svg>'
+};
+
+const grid   = document.getElementById('grid');
+const empty  = document.getElementById('empty');
+const crumbs = document.getElementById('crumbs');
+const countEl= document.getElementById('count');
+const viewer = document.getElementById('viewer');
+const vwrap  = document.getElementById('vwrap');
+const vname  = document.getElementById('vname');
+
+let curPath = '';      // 相对根目录的路径，如 '' 或 '本地影视/电影'
+let items   = [];
+let idx     = 0;
+let viewing = null;    // 当前查看的文件项
+let viewList = [];     // 同目录同类型的文件，供上一个/下一个
+
+/* ---------- 列表 ---------- */
+async function loadDir(p){
+  grid.classList.add('busy');
+  try {
+    const r = await fetch('/api/list?p=' + encodeURIComponent(p || ''));
+    const d = await r.json();
+    curPath = d.path || '';
+    items   = d.items || [];
+    renderCrumbs(curPath, d.parent);
+    renderGrid();
+  } catch (e) {
+    items = [];
+    grid.innerHTML = '';
+    empty.hidden = false;
+    empty.textContent = '读不到这个文件夹';
+  }
+  grid.classList.remove('busy');
+}
+
+function renderCrumbs(p, parent){
+  crumbs.innerHTML = '';
+  const parts = p ? p.split('/').filter(Boolean) : [];
+  const root = document.createElement('span');
+  root.className = 'crumb' + (parts.length ? '' : ' now');
+  root.textContent = '我的文件';
+  root.addEventListener('click', () => loadDir(''));
+  crumbs.appendChild(root);
+  let acc = '';
+  parts.forEach((part, i) => {
+    const sep = document.createElement('span');
+    sep.textContent = '›';
+    crumbs.appendChild(sep);
+    acc = acc ? acc + '/' + part : part;
+    const s = document.createElement('span');
+    s.className = 'crumb' + (i === parts.length - 1 ? ' now' : '');
+    s.textContent = part;
+    s.addEventListener('click', () => loadDir(acc));
+    crumbs.appendChild(s);
+  });
+  lastParent = parent;
+}
+let lastParent = null;
+
+function renderGrid(){
+  grid.innerHTML = '';
+  empty.hidden = items.length > 0;
+  items.forEach((it, i) => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    const icon = ICONS[it.type === 'dir' ? 'folder' : it.kind] || ICONS.file;
+    const inner = (it.kind === 'image')
+      ? '<img class="th" loading="lazy" alt="" src="/raw?p=' + encodeURIComponent(it.path) + '">'
+      : icon;
+    el.innerHTML =
+      '<div class="thumb">' + inner + '</div>' +
+      '<div class="meta"><div class="nm">' + escapeHtml(it.name) + '</div>' +
+      '<div class="sub">' + (it.type === 'dir' ? '文件夹' : it.size + ' · ' + it.mtime) + '</div></div>';
+    el.addEventListener('mouseenter', () => { idx = i; paint(); });
+    el.addEventListener('click', () => { idx = i; paint(); activate(i); });
+    grid.appendChild(el);
+  });
+  idx = Math.min(idx, Math.max(0, items.length - 1));
+  countEl.textContent = items.length ? (items.length + ' 项') : '';
+  paint();
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function paint(){
+  [...grid.children].forEach((c, i) => c.classList.toggle('on', i === idx));
+  const el = grid.children[idx];
+  if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
+}
+function gridCols(){
+  const kids = [...grid.children];
+  if (kids.length < 2) return 1;
+  const top = kids[0].offsetTop;
+  let n = 1;
+  for (let i = 1; i < kids.length; i++) { if (kids[i].offsetTop === top) n++; else break; }
+  return n;
+}
+function move(dx, dy){
+  if (!items.length) return;
+  const cols = gridCols();
+  let n = idx + dx + dy * cols;
+  n = Math.max(0, Math.min(items.length - 1, n));
+  idx = n; paint();
+}
+
+/* ---------- 打开 ---------- */
+function activate(i){
+  const it = items[i];
+  if (!it) return;
+  if (it.type === 'dir') { idx = 0; loadDir(it.path); return; }
+  if (it.kind === 'image') { viewList = items.filter(x => x.kind === 'image'); openViewer(it, 'image'); return; }
+  if (it.kind === 'video') { viewList = items.filter(x => x.kind === 'video'); openViewer(it, 'video'); return; }
+  if (it.kind === 'audio') { viewList = items.filter(x => x.kind === 'audio'); openViewer(it, 'audio'); return; }
+  if (it.kind === 'text')  { openViewer(it, 'text'); return; }
+  openViewer(it, 'other');
+}
+
+function openViewer(it, kind){
+  viewing = it;
+  viewer.hidden = false;
+  vname.textContent = it.name + (kind === 'image' || kind === 'video'
+    ? '　(' + (viewList.findIndex(x => x.path === it.path) + 1) + '/' + viewList.length + ')' : '');
+  vwrap.innerHTML = '';
+  const src = '/raw?p=' + encodeURIComponent(it.path);
+
+  if (kind === 'image') {
+    const im = document.createElement('img');
+    im.src = src;
+    vwrap.appendChild(im);
+  } else if (kind === 'video') {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center';
+    const v = document.createElement('video');
+    v.src = src; v.controls = true; v.autoplay = true;
+    v.style.cssText = 'max-width:100%;max-height:100%;background:#000';
+    const note = document.createElement('div');
+    note.id = 'vnote';
+    note.hidden = true;
+    note.innerHTML = '这个视频浏览器解不了（多为 HEVC / AC3 / DTS 音轨）<br>换「飞牛影视」播放';
+    v.addEventListener('error', () => { note.hidden = false; });
+    wrap.appendChild(v); wrap.appendChild(note);
+    vwrap.appendChild(wrap);
+  } else if (kind === 'audio') {
+    const a = document.createElement('audio');
+    a.src = src; a.controls = true; a.autoplay = true;
+    vwrap.appendChild(a);
+  } else if (kind === 'text') {
+    const pre = document.createElement('div');
+    pre.id = 'vtext';
+    pre.textContent = '读取中…';
+    vwrap.appendChild(pre);
+    fetch(src).then(r => r.text()).then(t => {
+      pre.textContent = t.length > 60000 ? t.slice(0, 60000) + '\n…（后面省略）' : t;
+    }).catch(() => { pre.textContent = '读不到这个文件'; });
+  } else {
+    const box = document.createElement('div');
+    box.style.cssText = 'text-align:center;color:#9aa7b8;font-size:clamp(14px,1.2vw,23px);line-height:2';
+    const a = document.createElement('a');
+    a.className = 'dl'; a.href = src + '&dl=1'; a.textContent = '下载此文件';
+    box.innerHTML = '<div style="margin-bottom:18px">' + escapeHtml(it.name) + '</div>' +
+                    '<div style="color:#6b7788;margin-bottom:24px">' + it.size + ' · ' + it.mtime + '</div>';
+    box.appendChild(a);
+    vwrap.appendChild(box);
+  }
+}
+function closeViewer(){
+  viewer.hidden = true;
+  vwrap.innerHTML = '';
+  viewing = null;
+  paint();
+}
+function stepViewer(d){
+  if (!viewing || !viewList.length) return;
+  let i = viewList.findIndex(x => x.path === viewing.path);
+  if (i < 0) return;
+  i = (i + d + viewList.length) % viewList.length;
+  const it = viewList[i];
+  const kind = it.kind;
+  openViewer(it, kind);
+}
+
+/* ---------- 顶部按钮 ---------- */
+const btns = [...document.querySelectorAll('#top .fbtn')];
+let barIdx = 0;
+function paintBar(){ btns.forEach((b, i) => b.classList.toggle('on', i === barIdx)); }
+btns.forEach((b, i) => {
+  b.addEventListener('mouseenter', () => { barIdx = i; paintBar(); [...grid.children].forEach(c => c.classList.remove('on')); });
+  b.addEventListener('click', () => runTop(b.dataset.act));
+});
+function runTop(act){
+  if (act === 'up') {
+    if (lastParent === null || lastParent === undefined) { askHome(); return; }
+    idx = 0; loadDir(lastParent);
+  } else if (act === 'refresh') {
+    loadDir(curPath);
+  } else if (act === 'desktop') {
+    askHome();
+  }
+}
+function askHome(){
+  try { parent.postMessage({ __launcherAct: 'home' }, '*'); } catch (e) {}
+}
+
+/* ---------- 键盘 / 遥控器 ---------- */
+document.addEventListener('keydown', e => {
+  const k = e.key;
+
+  if (!viewer.hidden) {                      // 查看器打开时
+    if (k === 'Escape' || k === 'ContextMenu' || k === 'BrowserBack' || k === 'GoBack') {
+      closeViewer(); e.preventDefault(); return;
+    }
+    if (k === 'ArrowLeft' || k === 'ArrowRight') {
+      if (viewing && (viewing.kind === 'image' || viewing.kind === 'video' || viewing.kind === 'audio')) {
+        stepViewer(k === 'ArrowRight' ? 1 : -1); e.preventDefault(); return;
+      }
+    }
+    return;                                  // 其它键交给播放器
+  }
+
+  switch (k) {
+    case 'ArrowRight': move(1, 0);  e.preventDefault(); return;
+    case 'ArrowLeft':  move(-1, 0); e.preventDefault(); return;
+    case 'ArrowDown':  move(0, 1);  e.preventDefault(); return;
+    case 'ArrowUp':    move(0, -1); e.preventDefault(); return;
+    case 'Enter': case ' ': case 'OK': case 'Select':
+      activate(idx); e.preventDefault(); return;
+    case 'Escape': case 'ContextMenu': case 'BrowserBack': case 'GoBack': case 'Backspace': {
+      if (curPath) { idx = 0; loadDir(lastParent || ''); }
+      else { try { parent.postMessage({ __launcherKey: k }, '*'); } catch (err) {} }
+      e.preventDefault(); return;
+    }
+  }
+});
+
+/* 点空白处回到顶部按钮导航 */
+document.getElementById('top').addEventListener('mousedown', () => paintBar());
+
+/* 支持 /files?p=本地影视 直接定位到某个子目录；&open=文件名 直接打开它 */
+const QS = new URLSearchParams(location.search);
+loadDir(QS.get('p') || '').then(() => {
+  const want = QS.get('open');
+  if (!want) return;
+  const i = items.findIndex(x => x.name === want);
+  if (i >= 0) { idx = i; paint(); activate(i); }
+});
+paintBar();
+window.focus();
+</script>
+</body>
+</html>

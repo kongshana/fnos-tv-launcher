@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>浏览器</title>
+<style>
+:root{
+  --bg:#0b0f16; --card:#141a24; --card-on:#1b2331;
+  --text:#e9eef6; --dim:#8794a8; --line:#1e2734; --accent:#ff9f45;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text)}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  display:flex;flex-direction:column;user-select:none;-webkit-user-select:none;
+}
+
+/* ---------- 导航栏 ---------- */
+#navtop{
+  display:flex;align-items:center;gap:clamp(6px,.55vw,12px);
+  padding:clamp(8px,.7vw,14px) clamp(12px,1.1vw,22px);
+  background:#0e131b;border-bottom:1px solid #1b2331;flex:0 0 auto;
+}
+.nbtn{
+  border:2px solid #26303f;border-radius:clamp(7px,.65vw,12px);
+  background:#131a24;color:#c9d4e3;font-family:inherit;font-weight:500;
+  font-size:clamp(13px,1.05vw,20px);padding:clamp(6px,.55vw,11px) clamp(10px,.9vw,18px);
+  cursor:pointer;outline:none;white-space:nowrap;
+  transition:transform .12s ease,border-color .12s ease,background .12s ease,color .12s ease;
+}
+.nbtn:hover{border-color:#3a4757}
+.nbtn.on{
+  transform:scale(1.08);border-color:var(--accent);background:#1d2634;color:#fff;
+  box-shadow:0 0 0 4px rgba(255,159,69,.22);
+}
+#addr{
+  flex:1;min-width:0;font-family:inherit;font-size:clamp(13px,1.05vw,20px);
+  padding:clamp(6px,.55vw,11px) clamp(10px,.95vw,18px);
+  border-radius:clamp(7px,.65vw,12px);border:2px solid #2a3543;
+  background:#0d131b;color:#e9eef6;outline:none;
+}
+#addr:focus{border-color:var(--accent)}
+
+/* ---------- 快捷站点 ---------- */
+#sites{flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(14px,1.4vw,28px) clamp(18px,1.9vw,36px);gap:clamp(10px,1vw,20px);overflow:auto}
+#sites[hidden]{display:none}
+.row-title{font-size:clamp(13px,1.1vw,21px);color:var(--dim);font-weight:500;letter-spacing:.05em}
+.grid{display:flex;flex-wrap:wrap;gap:clamp(10px,1vw,20px)}
+.site{
+  width:clamp(150px,11.6vw,224px);height:clamp(74px,5.9vw,114px);
+  border-radius:clamp(10px,1vw,18px);background:var(--card);
+  border:3px solid transparent;display:flex;align-items:center;gap:clamp(8px,.7vw,14px);
+  padding:0 clamp(10px,.9vw,18px);cursor:pointer;outline:none;
+  transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.site.on{
+  transform:scale(1.06);background:var(--card-on);border-color:var(--accent);
+  box-shadow:0 14px 34px rgba(0,0,0,.45);
+}
+.site .logo{
+  flex:0 0 auto;width:clamp(30px,2.6vw,50px);height:clamp(30px,2.6vw,50px);
+  border-radius:clamp(8px,.75vw,14px);display:flex;align-items:center;justify-content:center;
+  font-size:clamp(15px,1.35vw,26px);font-weight:600;color:#0a0d13;
+}
+.site .nm{font-size:clamp(14px,1.15vw,22px);font-weight:500}
+
+/* ---------- 网页 ---------- */
+#webwrap{flex:1;position:relative;background:#fff}
+#webwrap[hidden]{display:none}
+#web{border:0;width:100%;height:100%;display:block;background:#fff}
+#mask{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(15px,1.3vw,25px);color:#5d6879;background:#0b0f16;
+}
+#mask[hidden]{display:none}
+#tip{
+  position:absolute;left:50%;bottom:clamp(14px,1.4vw,26px);transform:translateX(-50%);
+  padding:clamp(7px,.6vw,12px) clamp(14px,1.3vw,26px);
+  border-radius:clamp(8px,.8vw,14px);background:rgba(10,14,20,.88);
+  border:1px solid #26303f;color:#9aa7b8;font-size:clamp(12px,1vw,18px);
+  opacity:0;transition:opacity .25s ease;pointer-events:none;white-space:nowrap;
+}
+#tip.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="navtop">
+  <button class="nbtn" data-act="back">←</button>
+  <button class="nbtn" data-act="fwd">→</button>
+  <button class="nbtn" data-act="reload">⟲</button>
+  <button class="nbtn" data-act="sites">⌂ 站点</button>
+  <input id="addr" type="text" autocomplete="off" spellcheck="false" placeholder="输入网址或搜索词">
+  <button class="nbtn" data-act="go">前往</button>
+  <button class="nbtn" data-act="kb">⌨ 键盘</button>
+  <button class="nbtn" data-act="desktop">回桌面</button>
+</div>
+
+<div id="sites">
+  <div class="row-title">常用站点　<span style="color:#6b7788">方向键选择 · OK 打开</span></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div id="webwrap" hidden>
+  <iframe id="web" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+  <div id="mask" hidden>正在加载…</div>
+  <div id="tip">按遥控器返回键或 Esc，回到上面的菜单栏</div>
+</div>
+
+<script>
+const SITES = [
+  { n:'必应',   u:'https://www.bing.com',          c:'#3ddc97', t:'B' },
+  { n:'百度',   u:'https://www.baidu.com',         c:'#4aa8ff', t:'百' },
+  { n:'哔哩哔哩', u:'https://www.bilibili.com',      c:'#ff6fa5', t:'bil' },
+  { n:'腾讯视频', u:'https://v.qq.com',              c:'#ff9f45', t:'腾' },
+  { n:'爱奇艺', u:'https://www.iqiyi.com',         c:'#7ee081', t:'爱' },
+  { n:'优酷',   u:'https://www.youku.com',         c:'#5bc8ff', t:'优' },
+  { n:'抖音',   u:'https://www.douyin.com',        c:'#b98bff', t:'抖' },
+  { n:'知乎',   u:'https://www.zhihu.com',         c:'#4aa8ff', t:'知' },
+  { n:'微博',   u:'https://weibo.com',             c:'#ffb347', t:'博' },
+  { n:'今日头条', u:'https://www.toutiao.com',       c:'#ff7a7a', t:'头' }
+];
+
+const grid = document.getElementById('grid');
+const sitesEl = document.getElementById('sites');
+const webwrap = document.getElementById('webwrap');
+const web = document.getElementById('web');
+const mask = document.getElementById('mask');
+const addr = document.getElementById('addr');
+const tip = document.getElementById('tip');
+
+let siteIdx = 0;
+let current = '';       // 当前真实网址（不是 /p?u= 形式）
+
+/* ---------- 快捷站点 ---------- */
+SITES.forEach((s, i) => {
+  const el = document.createElement('div');
+  el.className = 'site';
+  el.innerHTML = '<div class="logo" style="background:' + s.c + '">' + s.t + '</div>' +
+                 '<div class="nm">' + s.n + '</div>';
+  el.addEventListener('mouseenter', () => { siteIdx = i; paintSites(); });
+  el.addEventListener('click', () => navGo(s.u));
+  grid.appendChild(el);
+});
+function paintSites(){
+  [...grid.children].forEach((c, i) => c.classList.toggle('on', i === siteIdx));
+}
+function moveSites(d){
+  siteIdx = (siteIdx + d + SITES.length) % SITES.length;
+  paintSites();
+}
+
+/* ---------- 导航 ---------- */
+function toProxy(u){
+  if (!u) return '';
+  if (u.indexOf('/p?u=') === 0) return u;
+  return '/p?u=' + encodeURIComponent(u);
+}
+function fromProxy(href){
+  const m = /(?:^|[?&])u=([^&]+)/.exec(href || '');
+  return m ? decodeURIComponent(m[1]) : (href || '');
+}
+function parseInput(v){
+  v = (v || '').trim();
+  if (!v) return '';
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) return v;
+  if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/|$)/.test(v)) return 'https://' + v;
+  return 'https://www.bing.com/search?q=' + encodeURIComponent(v);
+}
+
+function navGo(rawUrl){
+  const url = parseInput(rawUrl);
+  if (!url) return;
+  current = url;
+  addr.value = url;
+  showWeb();
+  mask.hidden = false;
+  web.src = toProxy(url);
+}
+function showWeb(){ sitesEl.hidden = true; webwrap.hidden = false; }
+function showSites(){ webwrap.hidden = true; sitesEl.hidden = false; paintSites(); }
+
+function navBack(){   try { web.contentWindow.history.back(); }    catch(e){} }
+function navFwd(){    try { web.contentWindow.history.forward(); } catch(e){} }
+function navReload(){ mask.hidden = false; try { web.contentWindow.location.reload(); } catch(e){} }
+function navHome(){   showSites(); addr.value = ''; web.src = 'about:blank'; }
+
+/* 供启动器顶栏调用（同源，可直接访问） */
+window.navGo = navGo; window.navBack = navBack;
+window.navFwd = navFwd; window.navReload = navReload;
+
+web.addEventListener('load', () => {
+  mask.hidden = true;
+  try {
+    const href = web.contentWindow.location.href;
+    const real = fromProxy(href);
+    if (real && real !== 'about:blank') { current = real; addr.value = real; }
+  } catch(e){}
+  bindWebKeys();
+  showTip();
+});
+
+/* 网页里按键：把返回/菜单/方向键交给启动器处理（代理页同源，可以注入监听） */
+function bindWebKeys(){
+  try {
+    const d = web.contentDocument;
+    if (!d) return;
+    d.addEventListener('keydown', e => {
+      const k = e.key;
+      const t = e.target;
+      const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' ||
+                           t.tagName === 'SELECT' || t.isContentEditable);
+      if (k === 'Escape' || k === 'ContextMenu' || k === 'GoBack' || k === 'BrowserBack' ||
+          (!typing && k === 'Backspace')) {
+        e.preventDefault(); e.stopPropagation();
+        parent.postMessage({ __launcherKey: k }, '*');
+      }
+    }, true);
+  } catch(e){}
+}
+
+let tipTimer = null;
+function showTip(){
+  tip.classList.add('show');
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => tip.classList.remove('show'), 5000);
+}
+
+/* ---------- 导航栏按钮 ---------- */
+const btns = [...document.querySelectorAll('.nbtn')];
+let barIdx = 0;
+function paintBar(){
+  btns.forEach((b, i) => b.classList.toggle('on', i === barIdx));
+}
+btns.forEach((b, i) => {
+  b.addEventListener('mouseenter', () => { barIdx = i; paintBar(); clearSites(); });
+  b.addEventListener('click', () => run(b.dataset.act));
+});
+function clearSites(){ [...grid.children].forEach(c => c.classList.remove('on')); }
+function run(act){
+  switch (act) {
+    case 'back':    navBack(); break;
+    case 'fwd':     navFwd(); break;
+    case 'reload':  navReload(); break;
+    case 'sites':   navHome(); break;
+    case 'go':      navGo(addr.value); break;
+    case 'kb':      askKeyboard(); break;
+    case 'desktop': parent.postMessage({ __launcherAct: 'home' }, '*'); break;
+  }
+}
+
+/* 请求启动器弹出软键盘（遥控器没有实体键盘时用） */
+function askKeyboard(){
+  parent.postMessage({ __launcherKb: { value: addr.value } }, '*');
+}
+
+/* ---------- 键盘导航（焦点在本页时） ---------- */
+document.addEventListener('keydown', e => {
+  const k = e.key;
+  const inAddr = document.activeElement === addr;
+
+  if (inAddr) {
+    if (k === 'Enter') { navGo(addr.value); e.preventDefault(); }
+    else if (k === 'Escape') { addr.blur(); e.preventDefault(); }
+    return;
+  }
+
+  if (!sitesEl.hidden) {                       // 快捷站点网格
+    switch (k) {
+      case 'ArrowRight': moveSites(1);  e.preventDefault(); return;
+      case 'ArrowLeft':  moveSites(-1); e.preventDefault(); return;
+      case 'ArrowDown':  moveSites(5);  e.preventDefault(); return;
+      case 'ArrowUp':    moveSites(-5); e.preventDefault(); return;
+      case 'Enter': case ' ': case 'OK': case 'Select':
+        navGo(SITES[siteIdx].u); e.preventDefault(); return;
+    }
+  }
+
+  switch (k) {
+    case 'ArrowRight': barIdx = Math.min(btns.length - 1, barIdx + 1); paintBar(); clearSites(); e.preventDefault(); return;
+    case 'ArrowLeft':  barIdx = Math.max(0, barIdx - 1);               paintBar(); clearSites(); e.preventDefault(); return;
+    case 'Enter': case ' ': case 'OK': case 'Select':
+      run(btns[barIdx].dataset.act); e.preventDefault(); return;
+    case 'Escape': case 'ContextMenu': case 'BrowserBack':
+      parent.postMessage({ __launcherKey: k }, '*'); e.preventDefault(); return;
+  }
+});
+
+/* 双保险：代理页自己也注入了转发脚本，这里再收一次，确保返回键一定能回到启动器菜单栏 */
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (d && typeof d === 'object' && d.__launcherKey) {
+    parent.postMessage({ __launcherKey: d.__launcherKey }, '*');
+  }
+});
+
+/* 点击网页区域时把提示再显示一次，顺便绑一次按键监听 */
+web.addEventListener('load', showTip);
+document.addEventListener('mousedown', e => {
+  if (e.target === addr) { clearSites(); }
+});
+
+paintSites();
+paintBar();
+</script>
+</body>
+</html>
