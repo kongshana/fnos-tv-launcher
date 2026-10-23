@@ -178,6 +178,8 @@ kbd{
   background:#0d131b;color:#e9eef6;outline:none;margin-bottom:clamp(10px,.9vw,18px);
 }
 #kbin:focus{border-color:var(--accent)}
+#kbcur{font-size:clamp(12px,1vw,18px);color:#8b98ab;margin-bottom:clamp(8px,.7vw,14px);min-height:1.4em}
+#kbcur b{color:var(--accent)}
 #kbrow{margin-bottom:clamp(10px,.9vw,18px)}
 #kbgrid{display:flex;flex-direction:column;gap:clamp(6px,.55vw,11px)}
 .kbline{display:flex;gap:clamp(6px,.55vw,11px);justify-content:center}
@@ -259,6 +261,7 @@ kbd{
 <!-- ============ 软键盘 ============ -->
 <div id="kbdlg" hidden>
   <input id="kbin" type="text" autocomplete="off" spellcheck="false" placeholder="输入网址或搜索词：方向键选字符，OK/回车 输入，输完点「前往 ⤴」">
+  <div id="kbcur" class="kbcur"></div>
   <div id="kbgrid"></div>
   <div class="kbtip">方向键移动 · <b>OK / 回车 = 输入选中的字符</b> · 退格删除 · 点「前往 ⤴」打开网页或搜索　·　在网页搜索框里时，「前往」会把文字填进网页并搜索</div>
 </div>
@@ -306,6 +309,7 @@ const appnameEl = document.getElementById('appname');
 const kbdlg     = document.getElementById('kbdlg');
 const kbin      = document.getElementById('kbin');
 const kbgrid    = document.getElementById('kbgrid');
+const kbcur     = document.getElementById('kbcur');
 const bgtip     = document.getElementById('bgtip');
 
 /* mode: home(选应用) | bar(工具条) | kb(软键盘) | app(焦点交给应用) */
@@ -569,18 +573,16 @@ function buildKb(){
     kbgrid.appendChild(d);
     return cells;
   });
-  // 功能行
+  // 功能行（TV 风格：没有单独的“输入”键 —— OK/回车 直接把高亮的字符打进输入框）
   const d = document.createElement('div');
   d.className = 'kbline';
   const func = [
     { label:'空格', cls:'wide', fn: () => typeChar(' ') },
-    { label:'退格', cls:'wide del', fn: kbBackspace },
+    { label:'⌫ 退格', cls:'wide del', fn: kbBackspace },
     { label:'清空', cls:'', fn: kbClear },
     { label: kbSet === 'abc' ? '123' : 'ABC', cls:'', fn: () => { kbSet = kbSet === 'abc' ? '123' : 'abc'; buildKb(); paintKb(); } },
-    /* 显式的 OK 键：遥控器没有实体回车时，用它把选中的字符打进输入框 */
-    { label:'OK ✓', cls:'ok', fn: kbOk },
-    { label:'前往 ⤴', cls:'wide go', fn: kbGo },
-    { label:'关闭', cls:'', fn: hideKb }
+    { label:'⤴ 前往', cls:'wide go', fn: kbGo },
+    { label:'✕ 关闭', cls:'', fn: hideKb }
   ];
   const cells = func.map(f => {
     const b = document.createElement('div');
@@ -597,19 +599,20 @@ function buildKb(){
   kbgrid.appendChild(d);
   kbRows.push(cells);
 }
-let lastCh = 'q';     /* 最近选中的字符：鼠标点到「OK ✓」时用它兜底 */
 function paintKb(){
+  let cur = null;
   kbRows.forEach((line, r) => line.forEach((b, c) => {
     const on = (r === kbR && c === kbC);
     b.classList.toggle('on', on);
-    if (on && b.dataset.ch) lastCh = b.dataset.ch;
+    if (on) cur = b;
   }));
-}
-/* 按 OK / 回车 / 点「OK ✓」：只把选中的字符打进输入框，绝不跳转 */
-function kbOk(){
-  const b = kbRows[kbR] && kbRows[kbR][kbC];
-  if (b && b.dataset.ch) { typeChar(b.dataset.ch); return; }
-  if (lastCh) typeChar(lastCh);
+  /* 提示当前 OK/回车会执行什么：高亮在字符上→输入该字符；在高亮功能键上→执行该功能 */
+  if (cur) {
+    kbcur.textContent = 'OK / 回车 → ' +
+      (cur.dataset.ch ? ('输入「' + cur.dataset.ch + '」') : cur.textContent);
+  } else {
+    kbcur.textContent = '';
+  }
 }
 /* 当前是不是「浏览器」应用，而且网页里有个输入框正聚焦着？
    是的话，软键盘的字要直接打进网页，而不是只写进我们自己的地址栏。 */
@@ -712,7 +715,7 @@ document.addEventListener('keydown', e => {
       case 'ArrowLeft':  moveKb(-1, 0);  e.preventDefault(); return;
       case 'ArrowDown':  moveKb(0, 1);   e.preventDefault(); return;
       case 'ArrowUp':    moveKb(0, -1);  e.preventDefault(); return;
-      case 'Enter': case ' ': case 'OK': case 'Select': {
+      case 'Enter': case ' ': case 'OK': case 'Select': case 'Accept': case 'Confirm': {
         const b = kbRows[kbR] && kbRows[kbR][kbC];
         if (b) b.click();
         e.preventDefault(); return;
@@ -733,7 +736,7 @@ document.addEventListener('keydown', e => {
     switch (k) {
       case 'ArrowRight': setBarFocus(barIdx + 1); e.preventDefault(); return;
       case 'ArrowLeft':  setBarFocus(barIdx - 1); e.preventDefault(); return;
-      case 'Enter': case ' ': case 'OK': case 'Select':
+      case 'Enter': case ' ': case 'OK': case 'Select': case 'Accept': case 'Confirm':
         runBar(barBtns[barIdx].dataset.act); e.preventDefault(); return;
       case 'ArrowDown': intoApp(); e.preventDefault(); return;
       case 'Escape': case 'ContextMenu': goHome(); e.preventDefault(); return;
@@ -748,7 +751,7 @@ document.addEventListener('keydown', e => {
     switch (k) {
       case 'ArrowRight': case 'ArrowDown': moveHome(1);  e.preventDefault(); return;
       case 'ArrowLeft':  case 'ArrowUp':   moveHome(-1); e.preventDefault(); return;
-      case 'Enter': case ' ': case 'OK': case 'Select': openApp(cur); e.preventDefault(); return;
+      case 'Enter': case ' ': case 'OK': case 'Select': case 'Accept': case 'Confirm': openApp(cur); e.preventDefault(); return;
     }
     if (k === '0') { closeAllFrames(); e.preventDefault(); return; }   // 关掉后台应用
     if (/^[1-9]$/.test(k) && +k <= APPS.length) { selectApp(+k - 1); e.preventDefault(); }
