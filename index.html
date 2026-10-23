@@ -260,10 +260,10 @@ kbd{
 
 <!-- ============ 软键盘 ============ -->
 <div id="kbdlg" hidden>
-  <input id="kbin" type="text" autocomplete="off" spellcheck="false" placeholder="输入网址或搜索词：方向键选字符，OK/回车 输入，输完点「前往 ⤴」">
+  <input id="kbin" type="text" autocomplete="off" spellcheck="false" placeholder="点上面的字符即可输入；在网页输入框里时字会直接打进网页">
   <div id="kbcur" class="kbcur"></div>
   <div id="kbgrid"></div>
-  <div class="kbtip">方向键移动 · <b>OK / 回车 = 输入选中的字符</b> · 退格删除 · 点「前往 ⤴」打开网页或搜索　·　在网页搜索框里时，「前往」会把文字填进网页并搜索</div>
+  <div class="kbtip">点字符即可输入（飞鼠直接点也行）· 退格删除　·　<b>在网页输入框里时，字会直接打进网页</b>　·　空格 / 清空 / 123 切换，✕ 关闭</div>
 </div>
 
 <script>
@@ -581,7 +581,6 @@ function buildKb(){
     { label:'⌫ 退格', cls:'wide del', fn: kbBackspace },
     { label:'清空', cls:'', fn: kbClear },
     { label: kbSet === 'abc' ? '123' : 'ABC', cls:'', fn: () => { kbSet = kbSet === 'abc' ? '123' : 'abc'; buildKb(); paintKb(); } },
-    { label:'⤴ 前往', cls:'wide go', fn: kbGo },
     { label:'✕ 关闭', cls:'', fn: hideKb }
   ];
   const cells = func.map(f => {
@@ -606,10 +605,11 @@ function paintKb(){
     b.classList.toggle('on', on);
     if (on) cur = b;
   }));
-  /* 提示当前 OK/回车会执行什么：高亮在字符上→输入该字符；在高亮功能键上→执行该功能 */
+  /* 提示当前确认键会执行什么：高亮在字符上→输入该字符；在高亮功能键上→执行该功能 */
   if (cur) {
-    kbcur.textContent = 'OK / 回车 → ' +
-      (cur.dataset.ch ? ('输入「' + cur.dataset.ch + '」') : cur.textContent);
+    kbcur.textContent = cur.dataset.ch
+      ? ('点「' + cur.dataset.ch + '」即输入')
+      : cur.textContent;
   } else {
     kbcur.textContent = '';
   }
@@ -630,41 +630,42 @@ function syncFromWeb(n){
     }
   } catch (e) {}
 }
-/* 网页里的输入框只在「前往 ⤴」时一次性写入。
-   如果一边打字一边往网页塞字符，网页的输入处理会把焦点抢回 iframe，
-   后面的方向键/回车就漏进网页里，实测会让必应自己把搜索提交掉。 */
+/* 软键盘改为“点哪打哪、直接进网页”的通用输入法：
+   1) 网页输入框聚焦时，点一下字符就把字直接打进网页（代理页 __launcherType 只改 value 不抢焦点，飞鼠可用）；
+   2) 否则写进我们自己的输入框；若键盘是从导航栏地址框弹出来的，再同步回地址框，
+      这样关掉键盘后点导航栏的「前往」仍可导航。
+   不再有“前往→浏览器搜索”的跳转——提交交给网页自己的按钮。 */
+let kbForAddr = false;
+function mirrorAddr(){
+  if (!kbForAddr) return;
+  try {
+    const w = frameWin();
+    const a = w && w.document && w.document.getElementById('addr');
+    if (a) a.value = kbin.value;
+  } catch (e) {}
+}
 function typeChar(ch){
+  const n = webKb();
+  if (n) { try { n.webType(ch); syncFromWeb(n); } catch (e) {} return; }
   kbin.value += ch;
+  mirrorAddr();
   kbin.focus();
   kbin.setSelectionRange(kbin.value.length, kbin.value.length);
 }
 function kbBackspace(){
+  const n = webKb();
+  if (n) { try { n.webBack(); syncFromWeb(n); } catch (e) {} return; }
   kbin.value = kbin.value.slice(0, -1);
+  mirrorAddr();
   kbin.focus();
   kbin.setSelectionRange(kbin.value.length, kbin.value.length);
 }
 function kbClear(){
-  kbin.value = '';
-  kbin.focus();
-}
-function kbGo(){
-  const v = kbin.value.trim();
-  /* 网页里有输入框在等字（比如必应的搜索框）：把整段文字填进去并回车，
-     由网页自己完成搜索，比另开一个搜索地址更符合直觉。 */
   const n = webKb();
-  if (n) {
-    hideKb();
-    if (!v) return;
-    try { n.webClear(); n.webType(v); n.webEnter(); } catch (e) {}
-    return;
-  }
-  if (!v) { hideKb(); return; }
-  let url;
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v))      url = v;
-  else if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/|$)/.test(v)) url = 'https://' + v;
-  else url = 'https://www.bing.com/search?q=' + encodeURIComponent(v);
-  hideKb();
-  navTo(url);                      // 在浏览器应用内部打开，菜单栏不会消失
+  if (n) { try { n.webClear(); syncFromWeb(n); } catch (e) {} return; }
+  kbin.value = '';
+  mirrorAddr();
+  kbin.focus();
 }
 /* 统一入口：切到浏览器应用并在其中打开网址 */
 let pendingNav = null;      // 浏览器应用还没加载好时先记下来，load 完再送进去
@@ -772,17 +773,19 @@ window.addEventListener('message', e => {
 
   if (d.__launcherAct === 'home') { goHome(); return; }
 
-  if (d.__launcherKb) {                       // 浏览器导航栏请求软键盘
+  if (d.__launcherKb) {                       // 浏览器导航栏请求软键盘（来自地址框）
     const bi = APPS.findIndex(a => a.name === '浏览器');
     if (bi >= 0 && curApp !== bi) openApp(bi);
     kbin.value = d.__launcherKb.value || '';
+    kbForAddr = true; mirrorAddr();
     showKb();
     return;
   }
 
-  if (d.__launcherKbNeed) {                   // 网页里点了输入框，自动弹键盘
+  if (d.__launcherKbNeed) {                   // 网页里点了输入框，自动弹键盘（来自网页输入框）
     const bi = APPS.findIndex(a => a.name === '浏览器');
     if (bi >= 0 && curApp !== bi) return;
+    kbForAddr = false;
     if (kbdlg.hidden) showKb();
     return;
   }
